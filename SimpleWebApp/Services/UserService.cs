@@ -23,9 +23,15 @@ namespace SimpleWebApp.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task Delete(int id)
+        //public async Task Delete(int id)
+        //{
+        //    var user = await _dbContext.Users.FindAsync(id);
+        //    _dbContext.Users.Remove(user);
+        //    await _dbContext.SaveChangesAsync();
+        //}
+
+        public async Task Delete(User user)
         {
-            var user = await _dbContext.Users.FindAsync(id);
             _dbContext.Users.Remove(user);
             await _dbContext.SaveChangesAsync();
         }

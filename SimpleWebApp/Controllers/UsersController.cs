@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SimpleWebApp.Domain.Models;
@@ -28,7 +23,7 @@ namespace SimpleWebApp.Controllers
 
         public UsersController(AppDbContext context, IMapper mapper, IUserService userService, IRoleService roleService)
         {
-            _context = context;            
+            _context = context;
             _mapper = mapper;
             _userService = userService;
             _roleService = roleService;
@@ -47,16 +42,28 @@ namespace SimpleWebApp.Controllers
         //    return usersDto;
         //}
 
+        /// <summary>
+        /// Returns users, sorted and filtered list of users.
+        /// </summary>
+        /// <response code="200">Users have been successfully returned.</response>
+        /// <response code="404">No users found.</response>
+        /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [HttpGet]
         public async Task<ActionResult<PagedResponseDto<UserDto>>> GetUsers([FromQuery] FilterRequestDto<UsersFilterDto> request)
         {
             var users = _context.Users.Include(user => user.Roles).AsQueryable();
-            
+
             int totalItems = users.Count();
+
+            if (totalItems == 0)
+            {
+                return NotFound();
+            }
+
             int totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling((double)totalItems / request.Pagination.Limit.Value);
             users = _userService.ApplyFilter(users, request.Filter);
             users = _userService.ApplyPaging(users, request.Pagination.Page.Value, request.Pagination.Limit.Value);
-            
+
             return new PagedResponseDto<UserDto>
             {
                 Items = await _mapper.ProjectTo<UserDto>(users).ToListAsync(),
@@ -66,6 +73,12 @@ namespace SimpleWebApp.Controllers
             };
         }
 
+        /// <summary>
+        /// Returns user.
+        /// </summary>
+        /// <response code="200">User has been successfully found.</response>
+        /// <response code="404">User with specified id cannot be found.</response>
+        /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetUser(int id)
         {
@@ -76,9 +89,15 @@ namespace SimpleWebApp.Controllers
                 return NotFound();
             }
             var userDto = _mapper.Map<UserDto>(user);
-            return userDto;           
+            return userDto;
         }
 
+        /// <summary>
+        /// Updates user and returns an updated user.
+        /// </summary>
+        /// <response code="200">User has been successfully updated.</response>
+        /// <response code="400">Incorrect data was sent.</response>
+        /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [HttpPut]
         public async Task<ActionResult<UserDto>> PutUser(UpdateUserDto updateUserDto)
         {
@@ -95,31 +114,39 @@ namespace SimpleWebApp.Controllers
             {
                 return BadRequest();
             }
-            //!!!!!!!!!!!!!!!!!!!!!!!!!
             await _userService.Update(user);
             _context.Entry(user).Collection(user => user.Roles).Load();
             var userDto = _mapper.Map<UserDto>(user);
             return Ok(userDto);
         }
 
+
+        /// <summary>
+        /// Creates and returns user.
+        /// </summary>
+        /// <response code="200">User has been successfully updated.</response>
+        /// <response code="400">Incorrect data was sent.</response>
+        /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [HttpPost]
         public async Task<ActionResult<UserDto>> PostUser(CreateUserDto CreateUserDto)
-        {            
+        {
             if (await _userService.AnyContainsEmail(CreateUserDto.Email))
             {
                 return BadRequest("Данный email уже находится в базе данных");
             }
             var user = _mapper.Map<User>(CreateUserDto);
             await _userService.Create(user);
-            if (user == null)
-            {
-                return Conflict();
-            }
             var userDto = _mapper.Map<UserDto>(user);
-            //return userDto;
             return Ok(userDto);
         }
 
+        /// <summary>
+        /// Add new role to user and returns user.
+        /// </summary>
+        /// <response code="200">User has been successfully updated.</response>
+        /// <response code="404">Incorrect data was sent.</response>
+        /// <response code="409">User already has this role.</response>
+        /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [Route("AddRole")]
         [HttpPost]
         public async Task<ActionResult<UserDto>> PostNewUserRole(AddUsersRoleDto usersRoleDto)
@@ -134,7 +161,7 @@ namespace SimpleWebApp.Controllers
             {
                 return NotFound();
             }
-            if(_userService.HasRole(user, role))
+            if (_userService.HasRole(user, role))
             {
                 return Conflict();
             }
@@ -144,11 +171,22 @@ namespace SimpleWebApp.Controllers
             return Ok(userDto);
         }
 
+        /// <summary>
+        /// Deletes user.
+        /// </summary>
+        /// <response code="200">User has been successfully deleted.</response>
+        /// <response code="404">User with specified id cannot be found.</response>
+        /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            await _userService.Delete(id);
-            return NoContent();
+            var user = await _userService.Get(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            await _userService.Delete(user);
+            return Ok();
         }
 
     }

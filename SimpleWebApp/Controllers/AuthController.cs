@@ -22,9 +22,24 @@ namespace SimpleWebApp.Controllers
             _authorizedPersonService = authorizedPersonService;
         }
 
+        /// <summary>
+        /// Authorization and authentication.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     {
+        ///        "Login": "admin",
+        ///        "Password": "admin"
+        ///     }
+        ///
+        /// </remarks>
+        /// <response code="201">Returns JWT token</response>
+        /// <response code="401">Incorrect data was sent.</response>
+        /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [AllowAnonymous]
         [HttpPost]
-        [Route("authenticate")]
+        [Route("Authenticate")]
         public async Task<ActionResult<TokenResponse>> Authenticate(AuthorizedPersonDto authorizedPersonDto)
         {
             var authorizedPerson = await _authorizedPersonService.Get(authorizedPersonDto.Login, authorizedPersonDto.Password);

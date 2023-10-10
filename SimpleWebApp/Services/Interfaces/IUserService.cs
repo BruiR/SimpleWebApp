@@ -9,7 +9,7 @@ namespace SimpleWebApp.Services.Interfaces
         Task<User> Get(int id);
         Task Create(User user);
         Task Update(User user);
-        Task Delete(int id);  
+        Task Delete(User user);
         Task AddRole(User user, Role role); 
         bool Contains(User user);
         bool HasRole(User user, Role role);
