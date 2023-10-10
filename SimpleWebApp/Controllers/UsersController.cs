@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ using SimpleWebApp.Services.Interfaces;
 
 namespace SimpleWebApp.Controllers
 {
+    [Authorize(Roles = "admin")]
     [Route("[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
@@ -45,7 +47,6 @@ namespace SimpleWebApp.Controllers
         //    return usersDto;
         //}
 
-        // GET: api/Users
         [HttpGet]
         public async Task<ActionResult<PagedResponseDto<UserDto>>> GetUsers([FromQuery] FilterRequestDto<UsersFilterDto> request)
         {
@@ -65,7 +66,6 @@ namespace SimpleWebApp.Controllers
             };
         }
 
-        // GET: api/Users/5
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetUser(int id)
         {
@@ -102,7 +102,6 @@ namespace SimpleWebApp.Controllers
             return Ok(userDto);
         }
 
-        // POST: api/Users
         [HttpPost]
         public async Task<ActionResult<UserDto>> PostUser(CreateUserDto CreateUserDto)
         {            
@@ -145,8 +144,6 @@ namespace SimpleWebApp.Controllers
             return Ok(userDto);
         }
 
-        // DELETE: api/Users/5
-        //[HttpDelete("{id}", Name = "Delete")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {

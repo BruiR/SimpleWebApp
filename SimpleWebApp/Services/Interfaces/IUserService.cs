@@ -6,11 +6,11 @@ namespace SimpleWebApp.Services.Interfaces
     public interface IUserService
     {
         //Task<List<User>> GetUserList(); //Получение списка всех пользователей                                
-        Task<User> Get(int id); //Получение пользователя по Id и всех его ролей.
-        Task Create(User user); //Создание нового пользователя. 
-        Task Update(User user); //Обновление информации о пользователе по Id. 
-        Task Delete(int id); //Удаление пользователя по Id. 
-        Task AddRole(User user, Role role); //Добавление пользователю по Id новой Роли.
+        Task<User> Get(int id);
+        Task Create(User user);
+        Task Update(User user);
+        Task Delete(int id);  
+        Task AddRole(User user, Role role); 
         bool Contains(User user);
         bool HasRole(User user, Role role);
         Task<bool> AnyContainsEmail(string email);
