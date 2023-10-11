@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using SimpleWebApp.Domain.Models;
 using SimpleWebApp.DTOs.AuthorizedPerson;
+using SimpleWebApp.Services;
 using SimpleWebApp.Services.Interfaces;
+using System.Data;
 
 namespace SimpleWebApp.Controllers
 {
@@ -40,20 +42,27 @@ namespace SimpleWebApp.Controllers
         [Route("Authenticate")]
         public async Task<ActionResult<TokenResponse>> Authenticate(AuthorizedPersonDto authorizedPersonDto)
         {
-            var authorizedPerson = await _authorizedPersonService.Get(authorizedPersonDto.Login, authorizedPersonDto.Password);
-            if (authorizedPerson == null)
+            try
             {
-                Log.Error($"Authenticate: Incorrect data was sent. Login = {authorizedPersonDto.Login} Password = {authorizedPerson.Login}");
-                return Unauthorized();
-            }
-            var token = _jWTManager.Authenticate(authorizedPerson);
+                var authorizedPerson = await _authorizedPersonService.Get(authorizedPersonDto.Login, authorizedPersonDto.Password);
+                if (authorizedPerson == null)
+                {
+                    return Unauthorized();
+                }
+                var token = _jWTManager.Authenticate(authorizedPerson);
 
-            if (token == null)
+                if (token == null)
+                {
+                    return Unauthorized();
+                }
+                return Ok(token);
+            }
+            catch (Exception ex)
             {
-                return Unauthorized();
+                Log.Error($"Authenticate: Login = {authorizedPersonDto.Login} Password = {authorizedPersonDto.Password}" +
+                    $"\n Excetion : {ex.Message}");
+                return Problem();
             }
-
-            return Ok(token);
         }
 
     }
