@@ -3,9 +3,9 @@ using SimpleWebApp.DTOs.User;
 
 namespace SimpleWebApp.Validators
 {
-    public class CreateUserDtoValidator: AbstractValidator<CreateUserDto>
+    public class CreateUserDtoValidator : AbstractValidator<CreateUserDto>
     {
-        public CreateUserDtoValidator() 
+        public CreateUserDtoValidator()
         {
             RuleFor(user => user.Age)
                 .NotNull()

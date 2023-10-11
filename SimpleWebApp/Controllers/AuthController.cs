@@ -1,10 +1,8 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 using SimpleWebApp.Domain.Models;
 using SimpleWebApp.DTOs.AuthorizedPerson;
-using SimpleWebApp.DTOs.User;
-using SimpleWebApp.Repository;
 using SimpleWebApp.Services.Interfaces;
 
 namespace SimpleWebApp.Controllers
@@ -27,14 +25,14 @@ namespace SimpleWebApp.Controllers
         /// </summary>
         /// <remarks>
         /// Sample request:
-        ///
+        /// 
         ///     {
         ///        "Login": "admin",
         ///        "Password": "admin"
         ///     }
-        ///
+        /// Enter login = admin password = admin to have access to UserController
         /// </remarks>
-        /// <response code="201">Returns JWT token</response>
+        /// <response code="200">Returns JWT token</response>
         /// <response code="401">Incorrect data was sent.</response>
         /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [AllowAnonymous]
@@ -45,9 +43,10 @@ namespace SimpleWebApp.Controllers
             var authorizedPerson = await _authorizedPersonService.Get(authorizedPersonDto.Login, authorizedPersonDto.Password);
             if (authorizedPerson == null)
             {
+                Log.Error($"Authenticate: Incorrect data was sent. Login = {authorizedPersonDto.Login} Password = {authorizedPerson.Login}");
                 return Unauthorized();
             }
-            var token =  _jWTManager.Authenticate(authorizedPerson);
+            var token = _jWTManager.Authenticate(authorizedPerson);
 
             if (token == null)
             {

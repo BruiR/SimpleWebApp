@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace SimpleWebApp.Queries
+namespace SimpleWebApp.Domain.Queries
 {
     public class SortExpression<TEntity>
     {

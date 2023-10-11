@@ -3,7 +3,8 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using SimpleWebApp;
+using Serilog;
+using SimpleWebApp.Middlewares;
 using SimpleWebApp.Repository;
 using SimpleWebApp.Services;
 using SimpleWebApp.Services.Interfaces;
@@ -42,8 +43,16 @@ builder.Services.AddSwaggerGen(option =>
             },
             new string[]{}
         }
-    });
+    }); ;
 });
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Logger(log => log.Filter.ByIncludingOnly(e => e.Level == Serilog.Events.LogEventLevel.Information)
+    .WriteTo.File(@"C:\SimpleWebAppServiceLog\Info.log"))
+    .WriteTo.Logger(log => log.Filter.ByIncludingOnly(e => e.Level == Serilog.Events.LogEventLevel.Error)
+    .WriteTo.File(@"C:\SimpleWebAppServiceLog\Error.log"))
+    .CreateLogger();
 
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddScoped<IAuthorizedPersonService, AuthorizedPersonService>();
@@ -93,10 +102,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseMiddleware<HttpLoggingMiddleware>();
 app.MapControllers();
 
 app.Run();

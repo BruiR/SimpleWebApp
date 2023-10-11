@@ -1,4 +1,4 @@
-﻿namespace SimpleWebApp.DTOs
+﻿namespace SimpleWebApp.DTOs.Page
 {
     public class PagedResponseDto<TData>
     {

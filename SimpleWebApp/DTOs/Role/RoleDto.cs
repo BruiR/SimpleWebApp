@@ -1,9 +1,8 @@
-﻿
-namespace SimpleWebApp.DTOs.Role
+﻿namespace SimpleWebApp.DTOs.Role
 {
     public class RoleDto
     {
         public int Id { get; set; }
-        public string Name { get; set; }       
+        public string Name { get; set; }
     }
 }

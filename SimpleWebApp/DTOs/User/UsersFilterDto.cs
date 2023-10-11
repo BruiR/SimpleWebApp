@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace SimpleWebApp.DTOs
+namespace SimpleWebApp.DTOs.User
 {
     public class UsersFilterDto
     {

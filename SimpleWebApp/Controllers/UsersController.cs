@@ -2,8 +2,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using SimpleWebApp.Domain.Models;
-using SimpleWebApp.DTOs;
+using SimpleWebApp.DTOs.Filter;
+using SimpleWebApp.DTOs.Page;
 using SimpleWebApp.DTOs.Role;
 using SimpleWebApp.DTOs.User;
 using SimpleWebApp.Repository;
@@ -29,19 +31,6 @@ namespace SimpleWebApp.Controllers
             _roleService = roleService;
         }
 
-        //// GET: api/Users
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
-        //{
-        //    var users = await _userService.GetUserList();
-        //    if (users == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    var usersDto = _mapper.Map<List<User>, List<UserDto>>(users);               
-        //    return usersDto;
-        //}
-
         /// <summary>
         /// Returns users, sorted and filtered list of users.
         /// </summary>
@@ -49,6 +38,7 @@ namespace SimpleWebApp.Controllers
         /// <response code="404">No users found.</response>
         /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<PagedResponseDto<UserDto>>> GetUsers([FromQuery] FilterRequestDto<UsersFilterDto> request)
         {
             var users = _context.Users.Include(user => user.Roles).AsQueryable();
@@ -63,7 +53,7 @@ namespace SimpleWebApp.Controllers
             int totalPages = totalItems == 0 ? 1 : (int)Math.Ceiling((double)totalItems / request.Pagination.Limit.Value);
             users = _userService.ApplyFilter(users, request.Filter);
             users = _userService.ApplyPaging(users, request.Pagination.Page.Value, request.Pagination.Limit.Value);
-
+            users = _userService.ApplySorting(users, request.SortRules);
             return new PagedResponseDto<UserDto>
             {
                 Items = await _mapper.ProjectTo<UserDto>(users).ToListAsync(),
@@ -86,6 +76,7 @@ namespace SimpleWebApp.Controllers
             var user = await _userService.Get(id);
             if (user == null)
             {
+                Log.Error($"GetUser: Incorrect data was sent. Id = {id}");
                 return NotFound();
             }
             var userDto = _mapper.Map<UserDto>(user);
@@ -105,16 +96,30 @@ namespace SimpleWebApp.Controllers
             {
                 return BadRequest();
             }
+
             if (await _userService.AnyContainsEmailWithoutUser(updateUserDto.Id, updateUserDto.Email))
             {
                 return BadRequest("Данный email уже находится в базе данных");
             }
+
             var user = _mapper.Map<User>(updateUserDto);
             if (!_userService.Contains(user))
             {
+                Log.Error($"PutUser: Incorrect data was sent. Id = {updateUserDto.Id} " +
+                    $"name = {updateUserDto.Name} Email = {updateUserDto.Email} Age = {updateUserDto.Age}");
                 return BadRequest();
             }
-            await _userService.Update(user);
+
+            try
+            {
+                await _userService.Update(user);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"PutUser: id = {updateUserDto.Id} Name = {updateUserDto.Name} " +
+                    $"Email = {updateUserDto.Email} Age = {updateUserDto.Age} \n Excetion : {ex.Message}");
+                return Problem();
+            }
             _context.Entry(user).Collection(user => user.Roles).Load();
             var userDto = _mapper.Map<UserDto>(user);
             return Ok(userDto);
@@ -128,14 +133,25 @@ namespace SimpleWebApp.Controllers
         /// <response code="400">Incorrect data was sent.</response>
         /// <response code="500">Unhandled exception has been thrown over the request execution.</response>
         [HttpPost]
-        public async Task<ActionResult<UserDto>> PostUser(CreateUserDto CreateUserDto)
+        public async Task<ActionResult<UserDto>> PostUser(CreateUserDto createUserDto)
         {
-            if (await _userService.AnyContainsEmail(CreateUserDto.Email))
+            if (await _userService.AnyContainsEmail(createUserDto.Email))
             {
                 return BadRequest("Данный email уже находится в базе данных");
             }
-            var user = _mapper.Map<User>(CreateUserDto);
-            await _userService.Create(user);
+
+            var user = _mapper.Map<User>(createUserDto);
+            try
+            {
+                await _userService.Create(user);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"PostUser: Name = {createUserDto.Name} Email = {createUserDto.Email} " +
+                    $"Age = {createUserDto.Age} \n Excetion : {ex.Message}");
+                return Problem();
+            }
+
             var userDto = _mapper.Map<UserDto>(user);
             return Ok(userDto);
         }
@@ -156,16 +172,29 @@ namespace SimpleWebApp.Controllers
             {
                 return NotFound();
             }
+
             var role = await _roleService.GetRole(usersRoleDto.RoleId);
             if (role == null)
             {
                 return NotFound();
             }
+
             if (_userService.HasRole(user, role))
             {
                 return Conflict();
             }
-            await _userService.AddRole(user, role);
+
+            try
+            {
+                await _userService.AddRole(user, role);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"PostNewUserRole: UserId = {usersRoleDto.UserId} RoleId = {usersRoleDto.RoleId} " +
+                    $"\n Excetion : {ex.Message}");
+                return Problem();
+            }
+
             var UpdateUser = await _userService.Get(usersRoleDto.UserId);
             var userDto = _mapper.Map<UserDto>(UpdateUser);
             return Ok(userDto);
@@ -185,7 +214,17 @@ namespace SimpleWebApp.Controllers
             {
                 return NotFound();
             }
-            await _userService.Delete(user);
+
+            try
+            {
+                await _userService.Delete(user);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"DeleteUser: Id = {id} \n Excetion : {ex.Message}");
+                return Problem();
+            }
+
             return Ok();
         }
 

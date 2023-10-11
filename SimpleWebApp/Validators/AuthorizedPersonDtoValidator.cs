@@ -1,7 +1,5 @@
 ﻿using FluentValidation;
-using SimpleWebApp.Domain.Models;
 using SimpleWebApp.DTOs.AuthorizedPerson;
-using SimpleWebApp.DTOs.User;
 
 namespace SimpleWebApp.Validators
 {

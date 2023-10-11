@@ -1,16 +1,19 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Humanizer;
+using Microsoft.EntityFrameworkCore;
 using SimpleWebApp.Domain.Models;
-using SimpleWebApp.DTOs;
-using SimpleWebApp.DTOs.Role;
+using SimpleWebApp.Domain.Queries;
+using SimpleWebApp.DTOs.User;
 using SimpleWebApp.Repository;
 using SimpleWebApp.Services.Interfaces;
 using System.Data;
+using System.Linq.Expressions;
 
 namespace SimpleWebApp.Services
 {
     public class UserService : IUserService
     {
         private readonly AppDbContext _dbContext;
+        private const char SortOrderingSymbol = '-';
 
         public UserService(AppDbContext dbContext)
         {
@@ -23,13 +26,6 @@ namespace SimpleWebApp.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        //public async Task Delete(int id)
-        //{
-        //    var user = await _dbContext.Users.FindAsync(id);
-        //    _dbContext.Users.Remove(user);
-        //    await _dbContext.SaveChangesAsync();
-        //}
-
         public async Task Delete(User user)
         {
             _dbContext.Users.Remove(user);
@@ -41,34 +37,13 @@ namespace SimpleWebApp.Services
             return await _dbContext.Users
                 .Include(user => user.Roles)
                 .FirstOrDefaultAsync(user => user.Id == id);
-                //.FirstAsync(user => user.Id == id);
         }
-
-        //public async Task<List<User>> GetUserList()
-        //{
-        //    //throw new NotImplementedException();
-        //    return await _dbContext.Users.Include(user => user.Roles).ToListAsync();
-        //}
-
-        //public async Task<IQueryable<User>> GetUserList()
-        //{
-        //    //throw new NotImplementedException();
-        //    return await _dbContext.Users.Include(user => user.Roles).AsQueryable();
-        //}
 
         public async Task AddRole(User user, Role role)
         {
-            ////var user = await _dbContext.Users
-            ////    .Include(user => user.Roles)
-            ////    //.AsNoTracking()
-            ////    .FirstAsync(user => user.Id == userId);
-            //var user = await GetUser(userId);
-            ////user.Roles.Add(new Role { Id = roleId });
-            //var role = await _dbContext.Roles.FindAsync(roleId);
             user.Roles.Add(role);
-            await _dbContext.SaveChangesAsync();  
+            await _dbContext.SaveChangesAsync();
         }
-
 
         public async Task Update(User user)
         {
@@ -123,13 +98,55 @@ namespace SimpleWebApp.Services
                 source = source.Where(user => filter.Emails.Contains(user.Email));
             }
 
-            //if (filter.RoleIds != null)
-            //{
-
-            //    source = source.Where(user => filter.RoleIds.Intersect(user.Roles.Select(role => role.Id)) != null);
-            //}
-
             return source;
+        }
+
+        public static IReadOnlyDictionary<string, Expression<Func<User, object>>> SortExpressions { get; } =
+            new Dictionary<string, Expression<Func<User, object>>>
+            {
+                {nameof(UserDto.Id).Camelize(), user => user.Id},
+                {nameof(UserDto.Name).Camelize(), user => user.Name},
+                {nameof(UserDto.Age).Camelize(), user => user.Age},
+                {nameof(UserDto.Email).Camelize(), user => user.Email}
+            };
+
+        public IQueryable<User> ApplySorting(IQueryable<User> source, IEnumerable<string> sortRules)
+        {
+            if (sortRules == null)
+            {
+                return source;
+            }
+
+            var sortExpressions = sortRules
+              .Select(sortRule => new SortRule
+              {
+                  IsAscending = sortRule[0] != SortOrderingSymbol,
+                  PropertyName = sortRule[0] != SortOrderingSymbol ? sortRule : sortRule.Substring(1)
+              })
+              .Where(sortRule => SortExpressions.ContainsKey(sortRule.PropertyName))
+              .SelectMany(sortRule =>
+              {
+                  var originalSortExpression = SortExpressions[sortRule.PropertyName];
+
+                  return new[]
+                  {
+                      new SortExpression<User>
+                      {
+                          IsAscending = sortRule.IsAscending,
+                          Selector = originalSortExpression
+                      }
+                  };
+              });
+
+            var firstRule = sortExpressions.First();
+            var orderSource = firstRule.IsAscending
+                ? source.OrderBy(firstRule.Selector)
+                : source.OrderByDescending(firstRule.Selector);
+
+            return sortExpressions.Skip(1)
+                .Aggregate(orderSource, (current, sortExpression) => sortExpression.IsAscending
+                ? current.ThenBy(sortExpression.Selector)
+                : current.ThenByDescending(sortExpression.Selector));
         }
 
         public IQueryable<User> ApplyPaging(IQueryable<User> source, int page, int limit)
