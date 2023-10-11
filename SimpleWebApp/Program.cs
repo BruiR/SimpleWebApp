@@ -49,9 +49,9 @@ builder.Services.AddSwaggerGen(option =>
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .WriteTo.Logger(log => log.Filter.ByIncludingOnly(e => e.Level == Serilog.Events.LogEventLevel.Information)
-    .WriteTo.File(@"C:\SimpleWebAppServiceLog\Info.log"))
+    .WriteTo.File($"{AppContext.BaseDirectory}\\AppInfo.log"))
     .WriteTo.Logger(log => log.Filter.ByIncludingOnly(e => e.Level == Serilog.Events.LogEventLevel.Error)
-    .WriteTo.File(@"C:\SimpleWebAppServiceLog\Error.log"))
+    .WriteTo.File($"{AppContext.BaseDirectory}\\AppError.log"))
     .CreateLogger();
 
 builder.Services.AddAutoMapper(typeof(Program));
