@@ -18,7 +18,7 @@ namespace SimpleWebApp.Repository
                 new AuthorizedPerson[]
                 {
                     new AuthorizedPerson { Id =1, Login = "admin", Password = "admin", Role = "admin" },
-                    new AuthorizedPerson { Id =1, Login = "string", Password = "string", Role = "admin" }
+                    new AuthorizedPerson { Id =2, Login = "string", Password = "string", Role = "admin" }
                 });
             modelBuilder.Entity<Role>().HasData(
                 new Role[]
