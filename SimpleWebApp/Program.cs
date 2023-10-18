@@ -101,10 +101,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<ExceptionHandlerMiddleware>();
+app.UseMiddleware<HttpLoggingMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseMiddleware<HttpLoggingMiddleware>();
+//app.UseMiddleware<HttpLoggingMiddleware>();
 app.MapControllers();
 
 app.Run();

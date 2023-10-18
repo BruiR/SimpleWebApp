@@ -13,22 +13,22 @@ namespace SimpleWebApp.Repository
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetAssembly(typeof(AppDbContext))!);
-            modelBuilder.Entity<AuthorizedPerson>().HasData(
-                new AuthorizedPerson[]
-                {
-                    new AuthorizedPerson { Id =1, Login = "admin", Password = "admin", Role = "admin" },
-                    new AuthorizedPerson { Id =1, Login = "string", Password = "string", Role = "admin" }
-                });
-            modelBuilder.Entity<Role>().HasData(
-                new Role[]
-                {
-                    new Role { Id =1, Name ="User"},
-                    new Role { Id =2, Name ="Admin"},
-                    new Role { Id =3, Name ="Support"},
-                    new Role { Id =4, Name ="SuperAdmin"},
+            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetAssembly(typeof(AppDbContext)));
+            //modelBuilder.Entity<AuthorizedPerson>().HasData(
+            //    new AuthorizedPerson[]
+            //    {
+            //        new AuthorizedPerson { Id =1, Login = "admin", Password = "admin", Role = "admin" },
+            //        new AuthorizedPerson { Id =2, Login = "string", Password = "string", Role = "admin" }
+            //    });
+            //modelBuilder.Entity<Role>().HasData(
+            //    new Role[]
+            //    {
+            //        new Role { Id =1, Name ="User"},
+            //        new Role { Id =2, Name ="Admin"},
+            //        new Role { Id =3, Name ="Support"},
+            //        new Role { Id =4, Name ="SuperAdmin"},
 
-                });
+            //    });
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
